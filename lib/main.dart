@@ -5,6 +5,7 @@ import 'package:google_ml_kit/google_ml_kit.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:translator/translator.dart';
+import 'package:text_to_speech/text_to_speech.dart';
 
 void main() {
   runApp(const MyApp());
@@ -38,10 +39,14 @@ class _MyHomePageState extends State<MyHomePage> {
 
   XFile? imageFile;
 
-  String scannedText = "";
   String translatedText = "";
 
+  late TextEditingController _controller;
+  String _labelText = "Enter Text or Upload Image";
+
   GoogleTranslator translator = GoogleTranslator();
+
+  TextToSpeech tts = TextToSpeech();
 
   @override
   Widget build(BuildContext context) {
@@ -142,9 +147,10 @@ class _MyHomePageState extends State<MyHomePage> {
                   height: 20,
                 ),
                 Container(
-                  child: Text(
-                    scannedText,
+                  child: TextField(
+                    controller: _controller,
                     style: TextStyle(fontSize: 20),
+                    decoration: InputDecoration(labelText: _labelText),
                   ),
                 ),
                 Container(
@@ -188,7 +194,18 @@ class _MyHomePageState extends State<MyHomePage> {
                     child: Text(
                   translatedText,
                   style: TextStyle(fontSize: 20),
-                ))
+                )),
+                SizedBox(
+                  height: 10,
+                ),
+                if (translatedText != "")
+                  ElevatedButton(
+                    onPressed: (() {}),
+                    child: Text(
+                      "Texto a voz",
+                      style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                    ),
+                  )
               ],
             )),
       )),
@@ -206,7 +223,7 @@ class _MyHomePageState extends State<MyHomePage> {
     } catch (e) {
       textScanning = false;
       imageFile = null;
-      scannedText = "Error occured while scanning";
+      _controller.text = "";
       setState(() {});
     }
   }
@@ -253,6 +270,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void getRecognisedText(XFile image) async {
+    String scannedText = "";
     final inputImage = InputImage.fromFilePath(image.path);
     final textDetector = GoogleMlKit.vision.textRecognizer();
     RecognizedText recognisedText = await textDetector.processImage(inputImage);
@@ -260,23 +278,31 @@ class _MyHomePageState extends State<MyHomePage> {
     scannedText = "";
     for (TextBlock block in recognisedText.blocks) {
       for (TextLine line in block.lines) {
-        scannedText = scannedText + line.text + " ";
+        scannedText = "$scannedText${line.text} ";
       }
     }
     textScanning = false;
+    _controller.text = scannedText;
+    translatedText = "";
     setState(() {});
   }
 
   void transilateText() {
-    translator.translate(scannedText, from: 'en', to: 'es').then((s) {
+    translator.translate(_controller.text, from: 'en', to: 'es').then((s) {
       translatedText = s.text;
-      print(s);
       setState(() {});
     });
   }
 
+  void clearInputText() {
+    _controller.text = "";
+    _labelText = "Enter Text or Upload Image";
+  }
+
   @override
   void initState() {
+    _controller = TextEditingController();
+    _controller.text = "";
     super.initState();
   }
 }

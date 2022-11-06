@@ -41,6 +41,7 @@ dependencies:
   image_picker: ^0.8.6
   image_cropper: ^3.0.1
   translator: ^0.1.7
+  text_to_speech: ^0.2.3
 
 dev_dependencies:
   flutter_test:
