@@ -93,7 +93,6 @@ class _MyHomePageState extends State<MyHomePage> {
     final List<ImageLabel> labels = await imageLabeler.processImage(inputImg);
     for (ImageLabel label in labels) {
       final String text = label.label;
-      final int index = label.index;
       final double confidence = label.confidence;
       result += "$text   ${confidence.toStringAsFixed(2)}\n";
     }
@@ -160,21 +159,21 @@ class _MyHomePageState extends State<MyHomePage> {
           Stack(
             children: [
               Center(
-                child: Container(
+                child: SizedBox(
                     height: MediaQuery.of(context).size.height * 0.7,
                     width: MediaQuery.of(context).size.width * 0.7,
                     child: Image.asset('images/no-signal.jpg')),
               ),
               Center(
                 child: TextButton(
-                  child: Container(
+                  child: SizedBox(
                     height: MediaQuery.of(context).size.height * 0.7,
                     width: MediaQuery.of(context).size.width * 0.7,
                     child: img == null
-                        ? Container(
+                        ? SizedBox(
                             width: MediaQuery.of(context).size.width * 0.7,
                             height: MediaQuery.of(context).size.height * 0.7,
-                            child: Icon(
+                            child: const Icon(
                               Icons.videocam,
                               color: Colors.white,
                             ),
