@@ -7,6 +7,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:translator/translator.dart';
 import 'package:text_to_speech/text_to_speech.dart';
 
+import 'constants.dart';
+
 void main() {
   runApp(const MyApp());
 }
@@ -46,7 +48,78 @@ class _MyHomePageState extends State<MyHomePage> {
 
   GoogleTranslator translator = GoogleTranslator();
 
+  final String defaultLanguage = 'es-US';
   TextToSpeech tts = TextToSpeech();
+
+  String text = '';
+  double volume = 1; // Range: 0-1
+  double rate = 1.0; // Range: 0-2
+  double pitch = 1.0; // Range: 0-2
+
+  String? language;
+  String? languageCode;
+  List<String> languages = <String>[];
+  List<String> languageCodes = <String>[];
+  String? voice;
+
+  @override
+  void initState() {
+    _controller = TextEditingController();
+    _controller.text = "";
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      initLanguages();
+    });
+  }
+
+  Future<void> initLanguages() async {
+    /// populate lang code (i.e. en-US)
+    languageCodes = await tts.getLanguages();
+
+    /// populate displayed language (i.e. English)
+    final List<String>? displayLanguages = await tts.getDisplayLanguages();
+    if (displayLanguages == null) {
+      return;
+    }
+
+    languages.clear();
+    for (final dynamic lang in displayLanguages) {
+      languages.add(lang as String);
+    }
+
+    final String? defaultLangCode = await tts.getDefaultLanguage();
+    if (defaultLangCode != null && languageCodes.contains(defaultLangCode)) {
+      languageCode = defaultLangCode;
+    } else {
+      languageCode = defaultLanguage;
+    }
+    language = await tts.getDisplayLanguageByCode(languageCode!);
+
+    /// get voice
+    voice = await getVoiceByLang(languageCode!);
+
+    print("languageCodes len" + languageCodes.length.toString());
+    for (var i = 0; i < languageCodes.length; i++) {
+      String code = languageCodes[i].substring(0, 2);
+      if (Constants().langs.containsKey(code) == false) {
+        languageCodes.removeAt(i);
+        i -= 1;
+      }
+    }
+    print("languageCodes len" + languageCodes.length.toString());
+
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  Future<String?> getVoiceByLang(String lang) async {
+    final List<String>? voices = await tts.getVoiceByLang(languageCode!);
+    if (voices != null && voices.isNotEmpty) {
+      return voices.first;
+    }
+    return null;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -153,6 +226,33 @@ class _MyHomePageState extends State<MyHomePage> {
                     decoration: InputDecoration(labelText: _labelText),
                   ),
                 ),
+                //DROP DOWN MENU
+
+                DropdownButton<String>(
+                  value: language,
+                  icon: const Icon(Icons.arrow_downward),
+                  iconSize: 24,
+                  elevation: 16,
+                  style: const TextStyle(color: Colors.deepPurple),
+                  underline: Container(
+                    height: 2,
+                    color: Colors.deepPurpleAccent,
+                  ),
+                  onChanged: (String? newValue) async {
+                    languageCode = await tts.getLanguageCodeByName(newValue!);
+                    voice = await getVoiceByLang(languageCode!);
+                    setState(() {
+                      language = newValue;
+                    });
+                  },
+                  items:
+                      languages.map<DropdownMenuItem<String>>((String value) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(value),
+                    );
+                  }).toList(),
+                ),
                 Container(
                     margin: const EdgeInsets.symmetric(horizontal: 5),
                     padding: const EdgeInsets.only(top: 10),
@@ -166,7 +266,7 @@ class _MyHomePageState extends State<MyHomePage> {
                             borderRadius: BorderRadius.circular(8.0)),
                       ),
                       onPressed: () {
-                        transilateText();
+                        translateText();
                       },
                       child: Container(
                         margin: const EdgeInsets.symmetric(
@@ -200,12 +300,14 @@ class _MyHomePageState extends State<MyHomePage> {
                 ),
                 if (translatedText != "")
                   ElevatedButton(
-                    onPressed: (() {}),
+                    onPressed: () {
+                      speak();
+                    },
                     child: Text(
                       "Texto a voz",
                       style: TextStyle(fontSize: 13, color: Colors.grey[600]),
                     ),
-                  )
+                  ),
               ],
             )),
       )),
@@ -287,9 +389,14 @@ class _MyHomePageState extends State<MyHomePage> {
     setState(() {});
   }
 
-  void transilateText() {
-    translator.translate(_controller.text, from: 'en', to: 'es').then((s) {
+  void translateText() {
+    print("here" + " " + languageCode!.substring(0, 2) + " " + languageCode!);
+    translator
+        .translate(_controller.text,
+            from: 'en', to: languageCode!.substring(0, 2))
+        .then((s) {
       translatedText = s.text;
+      stopSpeak();
       setState(() {});
     });
   }
@@ -299,10 +406,11 @@ class _MyHomePageState extends State<MyHomePage> {
     _labelText = "Enter Text or Upload Image";
   }
 
-  @override
-  void initState() {
-    _controller = TextEditingController();
-    _controller.text = "";
-    super.initState();
+  void speak() {
+    tts.speak(translatedText);
+  }
+
+  void stopSpeak() {
+    tts.stop();
   }
 }
