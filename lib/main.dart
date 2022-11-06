@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:google_ml_kit/google_ml_kit.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:translator/translator.dart';
 
 void main() {
   runApp(const MyApp());
@@ -38,13 +39,16 @@ class _MyHomePageState extends State<MyHomePage> {
   XFile? imageFile;
 
   String scannedText = "";
+  String translatedText = "";
+
+  GoogleTranslator translator = GoogleTranslator();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
-        title: const Text("Text Recognition example"),
+        title: const Text("Translation Tool"),
       ),
       body: Center(
           child: SingleChildScrollView(
@@ -142,7 +146,49 @@ class _MyHomePageState extends State<MyHomePage> {
                     scannedText,
                     style: TextStyle(fontSize: 20),
                   ),
-                )
+                ),
+                Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 5),
+                    padding: const EdgeInsets.only(top: 10),
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        primary: Colors.white,
+                        onPrimary: Colors.grey,
+                        shadowColor: Colors.grey[400],
+                        elevation: 10,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8.0)),
+                      ),
+                      onPressed: () {
+                        transilateText();
+                      },
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(
+                            vertical: 5, horizontal: 5),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.recycling_rounded,
+                              size: 30,
+                            ),
+                            Text(
+                              "Translate",
+                              style: TextStyle(
+                                  fontSize: 13, color: Colors.grey[600]),
+                            )
+                          ],
+                        ),
+                      ),
+                    )),
+                SizedBox(
+                  height: 10,
+                ),
+                Container(
+                    child: Text(
+                  translatedText,
+                  style: TextStyle(fontSize: 20),
+                ))
               ],
             )),
       )),
@@ -219,6 +265,14 @@ class _MyHomePageState extends State<MyHomePage> {
     }
     textScanning = false;
     setState(() {});
+  }
+
+  void transilateText() {
+    translator.translate(scannedText, from: 'en', to: 'es').then((s) {
+      translatedText = s.text;
+      print(s);
+      setState(() {});
+    });
   }
 
   @override
